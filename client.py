@@ -19,7 +19,7 @@ def receive_message():
             msg = client.recv(1024).decode()
             sys.stdout.write(f"\r{msg}\n[{username}] : ")
             sys.stdout.flush()
-        except:
+        except ConnectionResetError, OSError:
             print("\nDisconnected from server")
             break
 

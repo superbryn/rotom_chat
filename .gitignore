@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 venv/
 .env/
+rotom_tui.py
+client_tui.py
