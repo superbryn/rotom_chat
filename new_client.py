@@ -2,15 +2,16 @@ import socket
 import threading
 import sys
 
+# Enter The Host Server's IP Address
 SERVER = input("Enter Host Addr: ")
 PORT = 5000
 
+# Handshake
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((SERVER, PORT))
 
 username = input("Enter your username: ")
-client.send(username.encode())  # Send username first
-
+client.send(username.encode())
 
 def receive_message():
     while True:
@@ -19,9 +20,8 @@ def receive_message():
             sys.stdout.write(f"\r{msg}\n[{username}] : ")
             sys.stdout.flush()
         except:
-            print("\nDisconnected from server.")
+            print("\nDisconnected from server")
             break
-
 
 def send_message():
     while True:
@@ -31,7 +31,6 @@ def send_message():
                 client.close()
                 break
             client.send(f"[{username}] : {msg}".encode())
-
 
 recv_thread = threading.Thread(target=receive_message, daemon=True)
 recv_thread.start()
