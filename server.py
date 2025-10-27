@@ -3,40 +3,60 @@ import threading
 
 HOST = "192.168.1.2"
 PORT = 5000
-clients = []
 
-def broadcast(sender, message):
+clients = {}  # Store {socket: username}
+
+
+def broadcast(sender_socket, message):
+    """Send message to all clients except the sender."""
     for client in clients:
-            if client != sender:
-                try:
-                     client.send(message)
-                except:
-                     clients.remove(client)
+        if client != sender_socket:
+            try:
+                client.send(message.encode())
+            except:
+                client.close()
+                del clients[client]
+
 
 def handle_client(client_socket, addr):
-    print(f"[+] {addr} connected")
+    print(f"[+] Connection from {addr}")
+
+    # Receive username first
+    username = client_socket.recv(1024).decode()
+    clients[client_socket] = username
+
+    # Announce to everyone
+    broadcast(client_socket, f"[SERVER]: {username} has joined the chat.")
+    print(f"[+] {username} connected")
+
     while True:
         try:
-            msg = client_socket.recv(1024)
+            msg = client_socket.recv(1024).decode()
             if not msg:
-                 break
-            broadcast(msg, client_socket)
+                break
+            broadcast(client_socket, msg)
+            print(msg)
         except:
-             break
-    print(f"[-] {addr} disconnected")
-    clients.remove(client_socket)
+            break
+
+    # When disconnected
+    print(f"[-] {username} disconnected")
+    broadcast(client_socket, f"[SERVER]: {username} has left the chat.")
+    del clients[client_socket]
     client_socket.close()
+
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST,PORT))
+    server.bind((HOST, PORT))
     server.listen()
-    print(f"Listning on {HOST}:{PORT}")
+    print(f"[SERVER RUNNING] Listening on {HOST}:{PORT}")
+
     while True:
-        client_socket , addr = server.accept()
-        clients.append(client_socket)
-        thread = threading.Thread(target=handle_client, args=(client_socket,addr))
+        client_socket, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(client_socket, addr))
         thread.start()
 
+
 if __name__ == "__main__":
-     start_server()
+    start_server()
