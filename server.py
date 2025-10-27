@@ -21,7 +21,7 @@ def handle_client(client_socket, addr):
     username = client_socket.recv(1024).decode()
     clients[client_socket] = username
 
-    # Joining Announcement
+    # Joining Broadcast
     broadcast(client_socket, f"[SERVER]: {username} has joined the chat.")
     print(f"[+] {username} connected")
 
@@ -35,7 +35,7 @@ def handle_client(client_socket, addr):
         except:
             break
 
-    # Leaving Annonucement
+    # Leaving Broadcast
     print(f"[-] {username} disconnected")
     broadcast(client_socket, f"[SERVER]: {username} has left the chat.")
     del clients[client_socket]
