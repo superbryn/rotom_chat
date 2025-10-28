@@ -1,7 +1,7 @@
 import socket
 import threading
 
-HOST = "192.168.1.2" # For Testing Purposes
+HOST = "192.168.1.3" # For Testing Purposes
 PORT = 5000 
 
 clients = {}  # Store {socket: username}
