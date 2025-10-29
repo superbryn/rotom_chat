@@ -72,7 +72,7 @@ class Chat(Screen):
         yield Footer(show_command_palette=False)
 
     def on_mount(self):
-        self.client = RotomClient("192.168.1.3", 5000, self.app.username, self.add_message)
+        self.client = RotomClient("192.168.8.133", 5000, self.app.username, self.add_message)
         self.client.connect()
         self.chat_log.write(f"[SYSTEM]: Connected to server as {self.app.username}.\n")
 

@@ -1,7 +1,8 @@
 import socket
 import threading
+from IpAddrs import local_ip
 
-HOST = "192.168.1.3" # For Testing Purposes
+HOST = local_ip()
 PORT = 5000 
 
 clients = {}  # Store {socket: username}
