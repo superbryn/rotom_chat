@@ -2,6 +2,7 @@ import socket
 import threading
 from IpAddrs import local_ip
 
+SERVER_NAME = input("Enter The Name For Your Server: ")
 HOST = local_ip()
 PORT = 5000 
 

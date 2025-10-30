@@ -59,7 +59,8 @@ class Login(Screen):
 
 class Chat(Screen):
     BINDINGS = [
-        ("ctrl+o", "quit" , "Quit")
+        ("ctrl+o", "quit" , "Quit"),
+        ("ctrl+f", "find_server", "Change Server")
     ]
 
     def compose(self) -> ComposeResult:
@@ -72,7 +73,7 @@ class Chat(Screen):
         yield Footer(show_command_palette=False)
 
     def on_mount(self):
-        self.client = RotomClient("192.168.8.133", 5000, self.app.username, self.add_message)
+        self.client = RotomClient("192.168.8.132", 5000, self.app.username, self.add_message)
         self.client.connect()
         self.chat_log.write(f"[SYSTEM]: Connected to server as {self.app.username}.\n")
 
@@ -88,6 +89,9 @@ class Chat(Screen):
     
     def action_quit(self):
         return sys.exit()
+    
+    def action_find_server(self):
+        print()
 
 class RotomChat(App):
     CSS = """
@@ -97,6 +101,7 @@ class RotomChat(App):
     }
     Input {
         border: solid grey;
+        color: green;
     }
     """
     def on_mount(self):
