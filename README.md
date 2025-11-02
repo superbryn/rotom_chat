@@ -1,3 +1,5 @@
+# ROTOM Chat - Python
+
 **ROTOM Chat** is a lightweight, **Textual-powered** LAN chat application built using **Python sockets**.
 
 It enables users on the same local network to communicate **without internet access**, featuring a nostalgic **server finder** similar to classic LAN games like Counter-Strike.
