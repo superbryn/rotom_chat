@@ -1,10 +1,9 @@
+from textual import on
 from textual.app import App, ComposeResult
 from textual.screen import Screen
 from textual.widgets import Static, Input, Header, Footer, Log, Button
-from textual.containers import Vertical
-import socket
-import threading
-import sys
+from textual.containers import Vertical, ScrollableContainer, Center
+import socket, threading, asyncio, json
 
 
 class RotomClient:
@@ -45,24 +44,156 @@ class RotomClient:
 
 
 class Login(Screen):
+    ASCII_ART = r"""
+
+/^^^^^^^        /^^^^     /^^^ /^^^^^^    /^^^^     /^^       /^^
+/^^    /^^    /^^    /^^       /^^      /^^    /^^  /^ /^^   /^^^
+/^^    /^^  /^^        /^^     /^^    /^^        /^^/^^ /^^ / /^^
+/^ /^^      /^^        /^^     /^^    /^^        /^^/^^  /^^  /^^
+/^^  /^^    /^^        /^^     /^^    /^^        /^^/^^   /^  /^^
+/^^    /^^    /^^     /^^      /^^      /^^     /^^ /^^       /^^
+/^^      /^^    /^^^^          /^^        /^^^^     /^^       /^^
+                                                                   
+    """
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+    #ascii {
+        content-align: center middle;
+        margin-bottom: 1;
+        color: cyan;
+    }
+    #username{
+        border: solid white;
+        background: transparent;
+    }
+    #next_button{
+        background: transparent;
+        border: solid white;
+        align: center middle;
+    }
+    """
+
     def compose(self) -> ComposeResult:
-        yield Static("Enter Your Username", id="label")
-        yield Input(placeholder="Your Username", id="username")
-        yield Button("Enter Chat", id="join_button")
+        yield Header(show_clock=True, time_format=None)
+        yield Static(self.ASCII_ART, markup=False, id="ascii")
+        yield Input(placeholder="Enter Your Name", id="username")
+        with Center():
+            yield Button("Next", id="next_button", flat=True)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         username = self.query_one("#username", Input).value.strip()
         if username:
             self.app.username = username
-            self.app.push_screen("chat")
+            self.app.push_screen("search") # opens server searching screen
     
+# UDP Server Finder
+class ServerFinder:
+    def __init__(self, callback, loop):
+        self.callback = callback
+        self.loop = loop
+        self.running = True
+
+    def start(self, port=6767): # Listen on port 6767
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(("",port))
+        sock.settimeout(2)
+
+        while self.running:
+            try:
+                data, addr = sock.recvfrom(1024)
+                msg = json.loads(data.decode())
+                asyncio.run_coroutine_threadsafe(self.callback(msg), self.loop)
+            except socket.timeout:
+                continue
+            except Exception as e:
+                pass
+
+    def stop(self):
+        self.running = False
+
+# Server selection window
+class SearchScreen(Screen):
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+    #title{
+        content-align: center middle;
+    }
+    #servers {
+        align: center middle;
+        width: 60%;
+    }
+
+    Button {
+        align: center middle;
+        margin: 1;
+        width: 100%;
+        height: 3;
+        text-align: center;
+        border: round $accent;
+    }
+    """
+    ASCII_ART = """
+┏━┓╻ ╻┏━┓╻╻  ┏━┓┏┓ ╻  ┏━╸   ┏━┓┏━╸┏━┓╻ ╻┏━╸┏━┓┏━┓
+┣━┫┃┏┛┣━┫┃┃  ┣━┫┣┻┓┃  ┣╸    ┗━┓┣╸ ┣┳┛┃┏┛┣╸ ┣┳┛┗━┓
+╹ ╹┗┛ ╹ ╹╹┗━╸╹ ╹┗━┛┗━╸┗━╸   ┗━┛┗━╸╹┗╸┗┛ ┗━╸╹┗╸┗━┛
+
+"""
+
+    def __init__(self,):
+        super().__init__()
+        self.servers = {}
+        self.listener = None
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Center():
+            yield Static(self.ASCII_ART, classes="title", id="title")
+        self.container = ScrollableContainer(id="servers")
+        yield self.container
+        yield Footer(show_command_palette=False)
+
+    async def on_mount(self) -> None:
+        loop = asyncio.get_running_loop()
+        self.listener = ServerFinder(self.add_server, loop)
+        threading.Thread(target=self.listener.start, daemon=True).start()
+    
+    async def add_server(self, packet: dict):
+        ip:str = packet.get("ipaddr")
+        port:int = packet.get("port")
+        self.server_name:str = packet.get("name", "Unnamed Server")
+
+        if ip not in self.servers:
+            self.servers[ip] = (self.server_name, port)
+            safe_id = f"btn_{ip.replace(".","_")}_{port}"
+            await self.container.mount(Button(f"{self.server_name} ({ip}:{port})", id=safe_id, name=f"{ip}:{port}", flat=True))
+
+    @on(Button.Pressed)
+    def on_button_pressed(self, event:Button.Pressed) -> None:
+        server = event.button.name
+        ip, port = server.split(":")
+        self.app.selected_server = (ip, int(port))
+        self.notify(f"Joined {self.server_name} - {ip}")
+        self.app.install_screen(Chat(), name="chat")
+        self.app.push_screen("chat")
+    
+    async def on_unmount(self):
+        self.listener.stop()
 
 class Chat(Screen):
-    BINDINGS = [
-        ("ctrl+o", "quit" , "Quit"),
-        ("ctrl+f", "find_server", "Change Server")
-    ]
-
+    CSS = """
+    Log {
+        height: 1fr;
+        border: solid white;
+    }
+    #msg_input {
+        border: solid grey;
+        color: white;
+    }
+    """
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical():
@@ -73,9 +204,10 @@ class Chat(Screen):
         yield Footer(show_command_palette=False)
 
     def on_mount(self):
-        self.client = RotomClient("192.168.8.132", 5000, self.app.username, self.add_message)
+        ip_addrs, port = self.app.selected_server
+        self.client = RotomClient(ip_addrs, port, self.app.username, self.add_message)
         self.client.connect()
-        self.chat_log.write(f"[SYSTEM]: Connected to server as {self.app.username}.\n")
+        self.chat_log.write(f"[CLIENT]: Connected to server as {self.app.username}.\n")
 
     def add_message(self, msg: str):
         self.chat_log.write(f"{msg}\n")
@@ -88,27 +220,24 @@ class Chat(Screen):
             self.msg_input.value = ""
     
     def action_quit(self):
-        return sys.exit()
-    
-    def action_find_server(self):
-        print()
+        self.client.disconnect()
+        self.app.exit()
+        
 
 class RotomChat(App):
-    CSS = """
-    Log {
-        height: 1fr;
-        border: solid blue;
-    }
-    Input {
-        border: solid grey;
-        color: green;
-    }
-    """
+    BINDINGS = [
+        ("ctrl+q", "quit" , "Quit")
+    ]
+
     def on_mount(self):
         self.username = None
+        self.selected_server = None
         self.install_screen(Login(), name="login")
-        self.install_screen(Chat(), name="chat")
-        self.push_screen("login")  # start at login screen
+        self.install_screen(SearchScreen(), name="search")
+        self.push_screen("login")  # start
 
 if __name__ == "__main__":
-    RotomChat().run()
+    try:
+        RotomChat().run()
+    except LookupError:
+        pass

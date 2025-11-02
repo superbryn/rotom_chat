@@ -16,9 +16,10 @@ msgpack==1.1.2
 multidict==6.7.0
 platformdirs==4.5.0
 propcache==0.4.1
+pyfiglet==1.0.4
 Pygments==2.19.2
 rich==14.2.0
-textual==6.4.0
+textual==6.5.0
 textual-dev==1.8.0
 textual-serve==1.1.2
 typing_extensions==4.15.0

@@ -1,12 +1,14 @@
 import socket
 import threading
 from IpAddrs import local_ip
+from broadcast import server_search
 
-SERVER_NAME = input("Enter The Name For Your Server: ")
+NAME = input("Enter Your Name: ")
 HOST = local_ip()
 PORT = 5000 
 
 clients = {}  # Store {socket: username}
+
 
 def broadcast(sender_socket, message):
     # Send message to all clients except the sender.
@@ -47,12 +49,13 @@ def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((HOST, PORT))
     server.listen()
+    threading.Thread(target=server_search, args=(NAME,)).start()
     print(f"[SERVER] Listening on {HOST}:{PORT}")
 
     while True:
         client_socket, addr = server.accept()
-        thread = threading.Thread(target=handle_client, args=(client_socket, addr))
-        thread.start()
+        threading.Thread(target=handle_client, args=(client_socket, addr)).start()
+        
 
 if __name__ == "__main__":
     start_server()
