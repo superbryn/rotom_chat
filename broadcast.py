@@ -11,6 +11,7 @@ def server_search(SERVER_NAME):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST,1)
 
+    
     msg = json.dumps(
                     {
                         "name": f"{SERVER_NAME}'s server",
