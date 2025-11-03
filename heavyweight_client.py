@@ -178,7 +178,7 @@ class SearchScreen(Screen):
         server = event.button.name
         ip, port = server.split(":")
         self.app.selected_server = (ip, int(port))
-        self.notify(f"Joined {self.server_name} - {ip}")
+        self.notify(f"Joined {self.server_name} :- {ip}")
         self.app.install_screen(Chat(), name="chat")
         self.app.push_screen("chat")
     
