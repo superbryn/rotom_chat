@@ -33,7 +33,7 @@ class RotomClient:
         try:
             self.client.send(f"[{self.username}]: {msg}".encode())
         except:
-            pass
+            self.disconnect()
 
     def disconnect(self):
         self.running = False
@@ -67,6 +67,7 @@ class Login(Screen):
     #username{
         border: solid white;
         background: transparent;
+        width: 50%
     }
     #next_button{
         background: transparent;
@@ -78,7 +79,8 @@ class Login(Screen):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True, time_format=None)
         yield Static(self.ASCII_ART, markup=False, id="ascii")
-        yield Input(placeholder="Enter Your Name", id="username")
+        with Center():
+            yield Input(placeholder="Enter Your Name", id="username")
         with Center():
             yield Button("Next", id="next_button", flat=True)
 
@@ -123,12 +125,12 @@ class SearchScreen(Screen):
         content-align: center middle;
     }
     #servers {
-        align: center middle;
-        width: 60%;
+        align: center top;
+        width: 50%;
     }
 
     Button {
-        align: center middle;
+        align: center top;
         margin: 1;
         width: 100%;
         height: 3;
@@ -140,7 +142,6 @@ class SearchScreen(Screen):
 ┏━┓╻ ╻┏━┓╻╻  ┏━┓┏┓ ╻  ┏━╸   ┏━┓┏━╸┏━┓╻ ╻┏━╸┏━┓┏━┓
 ┣━┫┃┏┛┣━┫┃┃  ┣━┫┣┻┓┃  ┣╸    ┗━┓┣╸ ┣┳┛┃┏┛┣╸ ┣┳┛┗━┓
 ╹ ╹┗┛ ╹ ╹╹┗━╸╹ ╹┗━┛┗━╸┗━╸   ┗━┛┗━╸╹┗╸┗┛ ┗━╸╹┗╸┗━┛
-
 """
 
     def __init__(self,):
@@ -152,8 +153,9 @@ class SearchScreen(Screen):
         yield Header()
         with Center():
             yield Static(self.ASCII_ART, classes="title", id="title")
-        self.container = ScrollableContainer(id="servers")
-        yield self.container
+        with Center():
+            self.container = ScrollableContainer(id="servers")
+            yield self.container
         yield Footer(show_command_palette=False)
 
     async def on_mount(self) -> None:
